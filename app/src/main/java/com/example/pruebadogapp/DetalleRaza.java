@@ -40,8 +40,6 @@ public class DetalleRaza extends AppCompatActivity {
         nombreRaza = (TextView) findViewById(R.id.lblViewPager2);
         viewPager2 = (ViewPager2) findViewById(R.id.vp2Imagenes);
 
-
-
         //Recepción de la raza seleccionada:
 
         Bundle bundle = getIntent().getExtras();
@@ -56,9 +54,6 @@ public class DetalleRaza extends AppCompatActivity {
 
         descargarImagenesRaza(razaSeleccionada);
 
-
-
-
     }
 
     public void descargarImagenesRaza(String criterioBusqueda){
@@ -69,7 +64,7 @@ public class DetalleRaza extends AppCompatActivity {
             new APIAsyncTask().execute(url);
 
         }catch(Exception e){
-            //TODO controlar excepción
+            Log.e("APICallError", "Exception", e);
         }
     }
     public String contenidoObtenido(String url){
@@ -87,14 +82,14 @@ public class DetalleRaza extends AppCompatActivity {
                 resultado = convertirAString(stream);
             }
         } catch(Exception e){
-            //TODO controlar excepción
+            Log.e("APIResponseError", "Exception", e);
         }finally{
             try{
                 if(stream != null){
                     stream.close();
                 }
             }catch(Exception e){
-                //TODO controlar excepción
+                Log.e("StreamError", "Exception", e);
             }
         }
         return resultado;
@@ -123,18 +118,12 @@ public class DetalleRaza extends AppCompatActivity {
                 //La respuesta tiene "message" (contiene todas las urls de las imagenes) y "status". Se almacena en un JSONObject para convertirlo posteriormente a una lista de urls.
                 JSONObject jsonObject = new JSONObject(informacionObtenida);
 
-
-
                 List<String> listado = convertirJsonImagenesURL(jsonObject);
-
-
-
 
                //Una vez se tienen los datos, se genera el ViewPAger2.
                 LayoutInflater layoutInflater = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 adaptadorViewPager2 = new AdaptadorViewPager2(getApplicationContext(),listado);
                 viewPager2.setAdapter(adaptadorViewPager2);
-
 
             }catch(Exception e){
                 Log.e("AsyncTask","Exception",e);
@@ -152,10 +141,6 @@ public class DetalleRaza extends AppCompatActivity {
         for(int i = 0; i<jsonArray.length(); i++){
             listadoImagenesRaza.add(jsonArray.get(i).toString());
         }
-
         return listadoImagenesRaza;
-
     }
-
-
 }

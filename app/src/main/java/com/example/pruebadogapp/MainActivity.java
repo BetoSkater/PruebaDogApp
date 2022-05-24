@@ -47,30 +47,19 @@ public class MainActivity extends AppCompatActivity {
 
         descargarRazaPerros();
 
-        //Llamada a la función para la creación y almacenamiento de los valores obtenidos:
-        //Se llama dentro de la función que descarga los datos de la API.
-
-
-        //TODO Mostrar la información descargada en un RecyclerVIew (nombre Raza + imagen aleatoria de las obtenidas con la url)
-
-
-        //TODO añadir un OnCLick --> nueva actividad con un ViewPAger con varias fotografias de la raza seleccionada.
-
-        //Todo subir a GitHub
-
     }
 
-    //TODO Descargar lista de las razas:
+    //Métodos para la consulta de todas las razas en el WebApi.
     //Función para la obtención de todos los datos relativos a las razas disponibles.:
     public void descargarRazaPerros() {
         try {
             String url = "https://dog.ceo/api/breeds/list/all";
             new APIAsyncTask().execute(url);
         } catch (Exception e) {
-            //TODO controlar excepción
+            Log.e("ApiCallError", "Exception", e);
         }
     }
-
+    //Función para obtener el resultado como String.
     public String contenidoObtenido(String url) {
         HttpClient httpClient = new DefaultHttpClient();
         String resultado = null;
@@ -86,19 +75,19 @@ public class MainActivity extends AppCompatActivity {
                 resultado = convertirAString(stream);
             }
         } catch (Exception e) {
-            //TODO controlar excepción
+            Log.e("ApiResponseError", "Exception", e);
         } finally {
             try {
                 if (stream != null) {
                     stream.close();
                 }
             } catch (Exception e) {
-                //TODO controlar excepción
+                Log.e("ApiStreamError", "Exception", e);
             }
         }
         return resultado;
     }
-
+    //Función que convierte la información obtenida en un String.
     public String convertirAString(InputStream inputStream) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         String linea = "";
@@ -109,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         inputStream.close();
         return resultado;
     }
-
+    //Clase que permite que la consulta se realice en segundo plano de forma asincrona.
     private class APIAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
@@ -129,30 +118,39 @@ public class MainActivity extends AppCompatActivity {
                 /* Ahora se almacena la lista de razas en local, se hace aqui ya que es donde se tiene la información de forma segura. Se usa SQLite.
                    Primero se crea la clase BaseDatosRazasHelper, la cual contiene la creación de la base de datos y lasactualizaciones.
                 */
-
                 crearBaseDatosYGuardado(listado);
 
+                //Tras esto se necesita una imagen aleatoria de cada raza, como estamos en un AsycTask, se pueden hacer llamadas a los métodos del webApi desde aqui
 
-                //Tras esto se necesita una imagen aleatoria de cada raza, como estamos en un AsycTask, se pueden hacer llamadas a los métodos del webApi desde aqui:
+                //TODO Falta por terminar la consulta múltiple. De momento se ha realizado el RecyclerView con una imagen genérica.
 
+                /*
+                //PAra descargar una imagen aleatoria por raza, se tiene que hacer uso de un bucle
+                for(int i = 0; i<listado.size(); i++){
+                    descargarImagenRaza(listado.get(i).getRaza().toString());
+                }
 
                 //TODO Falta encontrar la imagen aleatoria de la raza para crear un lista de objetos que contengan ambos valores.
                 //Para esto en principio haría falta realizar una consulta.
 
                 //descargarImagenesRaza(List<Raza> listadoRazasBusqueda); //TODO
 
+                */
 
-                List<RazaImagen> listadoValores = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
+                //Lista que se va a volcar en el RecyclerVIew.
+                List<RazaImagen> listadoValores = new ArrayList<>();
 
-                boolean interruptor = false;
+
                 for (Raza raza : listado) {
                         RazaImagen razaImagen = new RazaImagen();
                         razaImagen.setRaza(raza.getRaza());
-                        razaImagen.setUrl("https://images.dog.ceo/breeds/hound-afghan/n02088094_10715.jpg");
+                        razaImagen.setUrl("https://images.dog.ceo/breeds/hound-afghan/n02088094_10715.jpg"); //TODO Imagen estandar hasta que consiga terminar la consulta múltiple.
                         listadoValores.add(razaImagen);
 
                 }
 
+                //Todo esto tiene que ir tras la segunda consulta. Una vez se tenga una Lista con las imagenes buenas.
+                //Puesta en marcha del RecyclerView.
                 listadoDinamico.setHasFixedSize(true);
                 listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
                 adaptador = new AdaptadorRazas(listadoValores, getApplicationContext());
@@ -207,15 +205,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //TODO En construcción. Lo silencio ya que no está terminado. Aún así tocaría refactorizar.
+    /*
     //Metodos para la obtención de las imagenes:
 
     public void descargarImagenRaza(String nombreRaza) {
         try {
             String url = "https://dog.ceo/api/breed/" + nombreRaza + "/images/random";
-            new APIAsyncTask().execute(url);
+            new APIAsyncTaskImages().execute(url);
 
         } catch (Exception e) {
-            //TODO controlar excepción
+           Log.e("APIAsyncTask:RndImg", "Exception", e);
         }
     }
 
@@ -231,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (entity != null) {
                 stream = entity.getContent();
-                resultado = convertirAString(stream);
+                resultado = convertirUrlAString(stream);
             }
         } catch (Exception e) {
             //TODO controlar excepción
@@ -261,21 +261,13 @@ public class MainActivity extends AppCompatActivity {
     private class APIAsyncTaskImages extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
-            return contenidoObtenido(urls[0]);
+            return urlRazaObtenida(urls[0]);
         }
 
         @Override
         protected void onPostExecute(String informacionObtenida) {
             Toast.makeText(getBaseContext(), "Información obtenida con éxito.", Toast.LENGTH_LONG).show();
             try {
-
-                //Tras esto se necesita una imagen aleatoria de cada raza, como estamos en un AsycTask, se pueden hacer llamadas a los métodos del webApi desde aqui:
-
-
-                //TODO Falta encontrar la imagen aleatoria de la raza para crear un lista de objetos que contengan ambos valores.
-                //Para esto en principio haría falta realizar una consulta.
-
-                //descargarImagenesRaza(List<Raza> listadoRazasBusqueda); //TODO
 
                 List<RazaImagen> listadoValores = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
 
@@ -313,6 +305,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+
+
     }
+    */
 }
 

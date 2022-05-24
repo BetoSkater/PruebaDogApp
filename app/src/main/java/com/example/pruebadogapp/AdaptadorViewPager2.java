@@ -24,7 +24,6 @@ public class AdaptadorViewPager2 extends RecyclerView.Adapter<AdaptadorViewPager
         this.imagenesAleatorias = imagenesAleatorias;
     }
 
-
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -38,7 +37,6 @@ public class AdaptadorViewPager2 extends RecyclerView.Adapter<AdaptadorViewPager
         Glide.with(contexto).load(imagenesAleatorias.get(position)).into(holder.imgExpuesta);
     }
 
-
     @Override
     public int getItemCount() {
         return imagenesAleatorias.size();
@@ -46,7 +44,6 @@ public class AdaptadorViewPager2 extends RecyclerView.Adapter<AdaptadorViewPager
 
     public static class ViewHolder extends RecyclerView.ViewHolder{
         ImageView imgExpuesta;
-
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
