@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:gravity="center"
-        android:text="Listado de razas de perros:"
+        android:text="Listado de razas de perro:"
         android:textSize="25sp" />
 
     <androidx.recyclerview.widget.RecyclerView

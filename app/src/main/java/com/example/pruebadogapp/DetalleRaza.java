@@ -1,11 +1,15 @@
 package com.example.pruebadogapp;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.http.HttpEntity;
@@ -22,21 +26,31 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 public class DetalleRaza extends AppCompatActivity {
+    TextView nombreRaza;
+    ViewPager2 viewPager2;
+    AdaptadorViewPager2 adaptadorViewPager2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detalle_raza);
+        nombreRaza = (TextView) findViewById(R.id.lblViewPager2);
+        viewPager2 = (ViewPager2) findViewById(R.id.vp2Imagenes);
+
+
 
         //Recepción de la raza seleccionada:
 
         Bundle bundle = getIntent().getExtras();
         String razaSeleccionada = bundle.getString("razaSeleccionada");
+
+        //Se indica la raza seleccionada encima del ViewPager2.
+
+        nombreRaza.setText(razaSeleccionada.toUpperCase());
+
 
         //Una vez se tiene la raza, se realiza la consulta al webApi:
 
@@ -111,13 +125,16 @@ public class DetalleRaza extends AppCompatActivity {
 
 
 
-                //Paso de JSONObject a lista ArrayList
-
                 List<String> listado = convertirJsonImagenesURL(jsonObject);
 
-                //TODO pasar la lista al Carusel
 
-               //Aquí imagino que es donde  tengo que colocar el adaptador del carrusel.
+
+
+               //Una vez se tienen los datos, se genera el ViewPAger2.
+                LayoutInflater layoutInflater = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                adaptadorViewPager2 = new AdaptadorViewPager2(getApplicationContext(),listado);
+                viewPager2.setAdapter(adaptadorViewPager2);
+
 
             }catch(Exception e){
                 Log.e("AsyncTask","Exception",e);
