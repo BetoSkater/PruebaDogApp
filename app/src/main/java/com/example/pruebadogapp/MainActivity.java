@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     SQLiteDatabase baseDatos = null;
     RecyclerView listadoDinamico;
     private RecyclerView.Adapter adaptador;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,53 +59,55 @@ public class MainActivity extends AppCompatActivity {
         //Todo subir a GitHub
 
     }
+
     //TODO Descargar lista de las razas:
-    //Función para la descarga de la información:
-    public void descargarRazaPerros(){
-        try{
+    //Función para la obtención de todos los datos relativos a las razas disponibles.:
+    public void descargarRazaPerros() {
+        try {
             String url = "https://dog.ceo/api/breeds/list/all";
             new APIAsyncTask().execute(url);
-        }catch(Exception e){
+        } catch (Exception e) {
             //TODO controlar excepción
         }
     }
-    public String contenidoObtenido(String url){
+
+    public String contenidoObtenido(String url) {
         HttpClient httpClient = new DefaultHttpClient();
         String resultado = null;
         HttpGet httpGet = new HttpGet(url);
         HttpResponse httpResponse = null;
         InputStream stream = null;
-        try{
+        try {
             httpResponse = httpClient.execute(httpGet);
             HttpEntity entity = httpResponse.getEntity();
 
-            if(entity != null){
+            if (entity != null) {
                 stream = entity.getContent();
                 resultado = convertirAString(stream);
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             //TODO controlar excepción
-        }finally{
-            try{
-                if(stream != null){
+        } finally {
+            try {
+                if (stream != null) {
                     stream.close();
                 }
-            }catch(Exception e){
+            } catch (Exception e) {
                 //TODO controlar excepción
             }
         }
         return resultado;
     }
 
-    public String convertirAString(InputStream inputStream) throws IOException{
+    public String convertirAString(InputStream inputStream) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         String linea = "";
         String resultado = "";
-        while((linea = bufferedReader.readLine()) != null){
+        while ((linea = bufferedReader.readLine()) != null) {
             resultado += linea;
-          }
+        }
         inputStream.close();
-        return  resultado;
+        return resultado;
     }
 
     private class APIAsyncTask extends AsyncTask<String, Void, String> {
@@ -138,16 +141,27 @@ public class MainActivity extends AppCompatActivity {
 
                 //descargarImagenesRaza(List<Raza> listadoRazasBusqueda); //TODO
 
+
                 List<RazaImagen> listadoValores = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
+
+                boolean interruptor = false;
+                for (Raza raza : listado) {
+                        RazaImagen razaImagen = new RazaImagen();
+                        razaImagen.setRaza(raza.getRaza());
+                        razaImagen.setUrl("https://images.dog.ceo/breeds/hound-afghan/n02088094_10715.jpg");
+                        listadoValores.add(razaImagen);
+
+                }
 
                 listadoDinamico.setHasFixedSize(true);
                 listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-                adaptador = new AdaptadorRazas(listadoValores, getParent().getApplicationContext());
+                adaptador = new AdaptadorRazas(listadoValores, getApplicationContext());
                 listadoDinamico.setAdapter(adaptador);
 
 
             } catch (Exception e) {
                 Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show(); //TODO teniendo el log, poner algo mas nivel de usuario
+                System.out.println(e);
                 Log.e("APIAsyncTask", "Exception", e);
 
             }
@@ -193,8 +207,112 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Metodos para la obtención de las imagenes:
+
+    public void descargarImagenRaza(String nombreRaza) {
+        try {
+            String url = "https://dog.ceo/api/breed/" + nombreRaza + "/images/random";
+            new APIAsyncTask().execute(url);
+
+        } catch (Exception e) {
+            //TODO controlar excepción
+        }
+    }
+
+    public String urlRazaObtenida(String url) {
+        HttpClient httpClient = new DefaultHttpClient();
+        String resultado = null;
+        HttpGet httpGet = new HttpGet(url);
+        HttpResponse httpResponse = null;
+        InputStream stream = null;
+        try {
+            httpResponse = httpClient.execute(httpGet);
+            HttpEntity entity = httpResponse.getEntity();
+
+            if (entity != null) {
+                stream = entity.getContent();
+                resultado = convertirAString(stream);
+            }
+        } catch (Exception e) {
+            //TODO controlar excepción
+        } finally {
+            try {
+                if (stream != null) {
+                    stream.close();
+                }
+            } catch (Exception e) {
+                //TODO controlar excepción
+            }
+        }
+        return resultado;
+    }
+
+    public String convertirUrlAString(InputStream inputStream) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        String linea = "";
+        String resultado = "";
+        while ((linea = bufferedReader.readLine()) != null) {
+            resultado += linea;
+        }
+        inputStream.close();
+        return resultado;
+    }
+
+    private class APIAsyncTaskImages extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... urls) {
+            return contenidoObtenido(urls[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String informacionObtenida) {
+            Toast.makeText(getBaseContext(), "Información obtenida con éxito.", Toast.LENGTH_LONG).show();
+            try {
+
+                //Tras esto se necesita una imagen aleatoria de cada raza, como estamos en un AsycTask, se pueden hacer llamadas a los métodos del webApi desde aqui:
 
 
+                //TODO Falta encontrar la imagen aleatoria de la raza para crear un lista de objetos que contengan ambos valores.
+                //Para esto en principio haría falta realizar una consulta.
 
+                //descargarImagenesRaza(List<Raza> listadoRazasBusqueda); //TODO
+
+                List<RazaImagen> listadoValores = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
+
+                listadoDinamico.setHasFixedSize(true);
+                listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+                adaptador = new AdaptadorRazas(listadoValores, getParent().getApplicationContext());
+                listadoDinamico.setAdapter(adaptador);
+
+
+            } catch (Exception e) {
+                Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show(); //TODO teniendo el log, poner algo mas nivel de usuario
+                Log.e("APIAsyncTask", "Exception", e);
+
+            }
+        }
+
+        public List<Raza> convertirJsonUrl(JSONObject jsonObject) throws JSONException {
+            List<Raza> lista = new ArrayList<>();
+
+            //Obtención de los valores del campo "mensaje"
+            JSONObject jsonObjectConvertido = jsonObject.getJSONObject("message");
+            //El mensaje es un String que contiene grupos de clave-valor. La mayoria de los valores están en blanco porque son aclaraciones de la raza.
+            //Con un iterador, se recorren lo que son los campos "Clave", que en este caso son las razas, el valor que nos interesa. Se almacena en una Lista de Raza.
+            Iterator iterador = jsonObjectConvertido.keys();
+
+            while (iterador.hasNext()) {
+                String razaObtenida = iterador.next().toString();
+
+                Raza raza = new Raza();
+                raza.setRaza(razaObtenida);
+
+                lista.add(raza);
+            }
+            return lista;
+        }
+
+
+    }
 }
 

@@ -15,6 +15,8 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 public class AdaptadorRazas extends RecyclerView.Adapter<AdaptadorRazas.ViewHolder> {
@@ -39,10 +41,13 @@ public class AdaptadorRazas extends RecyclerView.Adapter<AdaptadorRazas.ViewHold
     @Override
     public void onBindViewHolder(AdaptadorRazas.ViewHolder holder, int position) {
         String raza = listaRazaImagen.get(position).getRaza();
-        holder.textoRaza.setText(raza);
+        String razaMayusculas = raza.toUpperCase();
+        holder.textoRaza.setText(razaMayusculas);
+
         Uri urlImagen = Uri.parse(listaRazaImagen.get(position).getUrl());
         holder.fotoRaza.setImageURI(urlImagen);
-
+        //Para cargar imagenes dentro de un RecyclerView Glide siempre me ha dado mejores resultados que Picasso.
+        Glide.with(contexto).load(urlImagen).into(holder.fotoRaza);
         //Evento onCLick:
 
         holder.tarjeta.setOnClickListener(new View.OnClickListener(){
@@ -50,6 +55,8 @@ public class AdaptadorRazas extends RecyclerView.Adapter<AdaptadorRazas.ViewHold
             public void onClick(View v){
                 Intent i = new Intent(contexto, DetalleRaza.class);
                 i.putExtra("razaSeleccionada", raza);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); //PAra solventar el error "AndroidRuntimeException: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?"
+
                 contexto.startActivity(i);
             }
         });
