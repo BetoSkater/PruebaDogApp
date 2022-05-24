@@ -15,9 +15,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -25,19 +27,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     SQLiteDatabase baseDatos = null;
-    RecyclerView listadoDinámico;
+    RecyclerView listadoDinamico;
     private RecyclerView.Adapter adaptador;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        listadoDinámico = (RecyclerView) findViewById(R.id.rcrView);
+        listadoDinamico = (RecyclerView) findViewById(R.id.rcrView);
 
         //Llamada a la función para la obtención de las razas mediante el webAPi:
 
@@ -104,72 +107,91 @@ public class MainActivity extends AppCompatActivity {
         return  resultado;
     }
 
-    private class APIAsyncTask extends AsyncTask<String, Void, String>{
+    private class APIAsyncTask extends AsyncTask<String, Void, String> {
         @Override
-        protected String doInBackground(String...urls){
+        protected String doInBackground(String... urls) {
             return contenidoObtenido(urls[0]);
         }
-        @Override
-        protected void onPostExecute(String informacionObtenida){
-            Toast.makeText(getBaseContext(),"Información obtenida con éxito.", Toast.LENGTH_LONG).show();
-            try{
-                //Conversión a JSON
-                JSONArray jsonArray = new JSONArray(informacionObtenida);
-                List<Raza> listado = convertirJsonRazas(jsonArray);
 
-                //TODO pasar lista a metodo que almacene en la base de datos local
+        @Override
+        protected void onPostExecute(String informacionObtenida) {
+            Toast.makeText(getBaseContext(), "Información obtenida con éxito.", Toast.LENGTH_LONG).show();
+            try {
+                //La respuesta tiene "message" (contiene todas las razas) y "status". Se almacena en un JSONObject para convertirlo posteriormente a una lista.
+                JSONObject jsonObject = new JSONObject(informacionObtenida);
+
+                //Paso de JSONObject a lista ArrayList
+                List<Raza> listado = convertirJsonRazas(jsonObject);
+
+                /* Ahora se almacena la lista de razas en local, se hace aqui ya que es donde se tiene la información de forma segura. Se usa SQLite.
+                   Primero se crea la clase BaseDatosRazasHelper, la cual contiene la creación de la base de datos y lasactualizaciones.
+                */
+
                 crearBaseDatosYGuardado(listado);
+
+
+                //Tras esto se necesita una imagen aleatoria de cada raza, como estamos en un AsycTask, se pueden hacer llamadas a los métodos del webApi desde aqui:
+
 
                 //TODO Falta encontrar la imagen aleatoria de la raza para crear un lista de objetos que contengan ambos valores.
                 //Para esto en principio haría falta realizar una consulta.
 
-                descargarImagenesRaza(List<Raza> listadoRazasBusqueda);
+                //descargarImagenesRaza(List<Raza> listadoRazasBusqueda); //TODO
 
                 List<RazaImagen> listadoValores = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
 
-                listadoDinámico.setHasFixedSize(true);
-                listadoDinámico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-                adaptador = new AdaptadorRazas(listadoValores,getParent().getApplicationContext());
-                listadoDinámico.setAdapter(adaptador);
+                listadoDinamico.setHasFixedSize(true);
+                listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+                adaptador = new AdaptadorRazas(listadoValores, getParent().getApplicationContext());
+                listadoDinamico.setAdapter(adaptador);
 
 
-
-            }catch(Exception e){
+            } catch (Exception e) {
+                Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show(); //TODO teniendo el log, poner algo mas nivel de usuario
+                Log.e("APIAsyncTask", "Exception", e);
 
             }
         }
-    }
-    public List<Raza> convertirJsonRazas(JSONArray jsonArray) throws JSONException{
-        List<Raza> lista = new ArrayList<>();
-        for (int i = 0; i< jsonArray.length(); i++){
-            Raza raza =  new Raza();
 
-            String razaPerro = jsonArray.getJSONObject(i).optString("message").toString(); // message es lo que aparece en el WebApi, comprobar por si acaso.
-            raza.setRaza(razaPerro);
-            lista.add(raza);
+        public List<Raza> convertirJsonRazas(JSONObject jsonObject) throws JSONException {
+            List<Raza> lista = new ArrayList<>();
+
+            //Obtención de los valores del campo "mensaje"
+            JSONObject jsonObjectConvertido = jsonObject.getJSONObject("message");
+            //El mensaje es un String que contiene grupos de clave-valor. La mayoria de los valores están en blanco porque son aclaraciones de la raza.
+            //Con un iterador, se recorren lo que son los campos "Clave", que en este caso son las razas, el valor que nos interesa. Se almacena en una Lista de Raza.
+            Iterator iterador = jsonObjectConvertido.keys();
+
+            while (iterador.hasNext()) {
+                String razaObtenida = iterador.next().toString();
+
+                Raza raza = new Raza();
+                raza.setRaza(razaObtenida);
+
+                lista.add(raza);
+            }
+            return lista;
         }
-        return lista;
-    }
 
-    //TODO Guardar la lista en SQLite
 
-    public void crearBaseDatosYGuardado( List<Raza> lista){
-        BaseDatosRazasHelper bdhl = new BaseDatosRazasHelper(this, "BaseDatosRazas", null, 1);
+        public void crearBaseDatosYGuardado(List<Raza> lista) {
+            //Creación de la base de datos haciendo uso de la clase BaseDatosRazasHelper
+            BaseDatosRazasHelper bdhl = new BaseDatosRazasHelper(getApplicationContext(), "BaseDatosRazas", null, 1);
 
-        baseDatos = bdhl.getWritableDatabase();
-        //Una vez se tiene la base de datos, se hace una comprobación de que existe y se almacenan los valores.
-        if( baseDatos != null){
-            for(int i = 0; i<lista.size(); i++){
-                int identificador = i++;
-                String nombreRaza = lista.get(i).getRaza();
+            baseDatos = bdhl.getWritableDatabase();
+            //Una vez se tiene la base de datos con modo escritura, se hace una comprobación de que existe y se almacenan los valores de las razas.
+            if (baseDatos != null) {
+                int identificador = 0;
+                for (int i = 0; i < lista.size(); i++) {
+                    identificador += 1;
+                    String nombreRaza = lista.get(i).getRaza();
 
-                baseDatos.execSQL("INSERT INTO Razas (id, nombre) " + "VALUES (" + identificador + ", '" + nombreRaza + "')" );
-
+                    baseDatos.execSQL("INSERT INTO Razas (id, nombre) " + "VALUES (" + identificador + ", '" + nombreRaza + "')");
+                }
                 Toast.makeText(getApplicationContext(), "Se ha alamcenado la información en SQLite", Toast.LENGTH_LONG).show();
             }
         }
     }
-
 
 
 

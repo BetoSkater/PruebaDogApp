@@ -4,6 +4,9 @@ public class RazaImagen {
     private String raza;
     private String url;
 
+    public RazaImagen() {
+    }
+
     public RazaImagen(String raza, String url) {
         this.raza = raza;
         this.url = url;
