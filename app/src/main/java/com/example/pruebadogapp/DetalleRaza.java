@@ -9,6 +9,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +32,7 @@ import java.util.List;
 
 public class DetalleRaza extends AppCompatActivity {
     TextView nombreRaza;
+    ProgressBar barraCargando;
     ViewPager2 viewPager2;
     AdaptadorViewPager2 adaptadorViewPager2;
 
@@ -38,7 +41,10 @@ public class DetalleRaza extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detalle_raza);
         nombreRaza = (TextView) findViewById(R.id.lblViewPager2);
+        barraCargando = (ProgressBar) findViewById(R.id.prgBarraDetalle);
         viewPager2 = (ViewPager2) findViewById(R.id.vp2Imagenes);
+
+        barraCargando.setVisibility(View.VISIBLE);
 
         //Recepción de la raza seleccionada:
 
@@ -48,7 +54,6 @@ public class DetalleRaza extends AppCompatActivity {
         //Se indica la raza seleccionada encima del ViewPager2.
 
         nombreRaza.setText(razaSeleccionada.toUpperCase());
-
 
         //Una vez se tiene la raza, se realiza la consulta al webApi:
 
@@ -115,12 +120,14 @@ public class DetalleRaza extends AppCompatActivity {
         protected void onPostExecute(String informacionObtenida){
             Toast.makeText(getBaseContext(),"Información obtenida con éxito.", Toast.LENGTH_LONG).show();
             try{
-                //La respuesta tiene "message" (contiene todas las urls de las imagenes) y "status". Se almacena en un JSONObject para convertirlo posteriormente a una lista de urls.
+                //La respuesta tiene "message" (contiene todas las urls de las imagenes) y "status".
+                // Se almacena en un JSONObject para convertirlo posteriormente a una lista de urls.
                 JSONObject jsonObject = new JSONObject(informacionObtenida);
 
                 List<String> listado = convertirJsonImagenesURL(jsonObject);
 
-               //Una vez se tienen los datos, se genera el ViewPAger2.
+               //Una vez se tienen los datos, se  carga el ViewPager2.
+                barraCargando.setVisibility(View.INVISIBLE);
                 LayoutInflater layoutInflater = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 adaptadorViewPager2 = new AdaptadorViewPager2(getApplicationContext(),listado);
                 viewPager2.setAdapter(adaptadorViewPager2);

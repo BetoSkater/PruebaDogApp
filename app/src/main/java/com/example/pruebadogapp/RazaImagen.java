@@ -1,6 +1,7 @@
 package com.example.pruebadogapp;
 
 public class RazaImagen {
+
     private String raza;
     private String url;
 

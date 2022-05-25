@@ -8,12 +8,18 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/lblListaCarga"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:gravity="center"
-        android:text="Listado de razas de perro:"
         android:textSize="25sp" />
+
+    <ProgressBar
+        android:id="@+id/prbBarra"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rcrView"

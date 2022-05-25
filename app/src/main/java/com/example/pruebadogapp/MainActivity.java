@@ -20,6 +20,9 @@ import org.json.JSONObject;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -33,18 +36,26 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     SQLiteDatabase baseDatos = null;
-    RecyclerView listadoDinamico;
-    private RecyclerView.Adapter adaptador;
     List<String> razasFinales = new ArrayList<>();
+
+    TextView lblTitulo;
+    ProgressBar barraCarga;
+    RecyclerView listadoDinamico;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        lblTitulo = (TextView) findViewById(R.id.lblListaCarga);
+        barraCarga = (ProgressBar) findViewById(R.id.prbBarra);
         listadoDinamico = (RecyclerView) findViewById(R.id.rcrView);
 
-        //Llamada a la función para la obtención de las razas mediante el webAPi:
+        barraCarga.setVisibility(View.VISIBLE);
+        listadoDinamico.setVisibility(View.INVISIBLE);
 
+        //Llamada a la función para la obtención de las razas mediante el webAPi:
         descargarRazaPerros();
 
     }
@@ -58,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e("ApiCallError", "Exception", e);
         }
     }
-    //Función para obtener el resultado como String.
+    //Función que realiza la petición GET y devuelve el resultado como String.
     public String contenidoObtenido(String url) {
         HttpClient httpClient = new DefaultHttpClient();
         String resultado = null;
@@ -86,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return resultado;
     }
-    //Función que convierte la información obtenida en un String.
+    //Función que convierte la información obtenida (InputStream) en un String.
     public String convertirAString(InputStream inputStream) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         String linea = "";
@@ -101,6 +112,8 @@ public class MainActivity extends AppCompatActivity {
     private class APIAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
+            lblTitulo.setText("Obteniendo el listado de todas las razas de perro");
+            lblTitulo.setTextSize(15); //TODO
             return contenidoObtenido(urls[0]);
         }
 
@@ -120,48 +133,24 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 /* Ahora se almacena la lista de razas en local, se hace aqui ya que es donde se tiene la información de forma segura. Se usa SQLite.
-                   Primero se crea la clase BaseDatosRazasHelper, la cual contiene la creación de la base de datos y lasactualizaciones.
+                   Primero se crea la clase BaseDatosRazasHelper, la cual contiene la creación de la base de datos y las actualizaciones de la misma.
                 */
+
+                lblTitulo.setText("Almacenando los valores en SQLite");
                 crearBaseDatosYGuardado(listado);
 
-                //Tras esto se necesita una imagen aleatoria de cada raza, como estamos en un AsycTask, se pueden hacer llamadas a los métodos del webApi desde aqui
-
-                //TODO Falta por terminar la consulta múltiple. De momento se ha realizado el RecyclerView con una imagen genérica.
-
                 /*
-                //TODO hacer llamada al metodo de la multiconsulta
-
-
-                //TODO Falta encontrar la imagen aleatoria de la raza para crear un lista de objetos que contengan ambos valores.
-                //Para esto en principio haría falta realizar una consulta.
-
-
+                Tras esto se necesita una imagen aleatoria de cada raza. Como se tienen que realizar 95 consultas a la vez, se han creado nuevos métodos especificos
+                para realizar estas 95 consultas de golpe. Lo más correcto hubiese sido haber creado la lógica de las consultas en otro fichero estructurando
+                los flujos de código. Por lo que haría falta una refactorización.
                  */
-                descargarImagenRaza(listado); //TODO llamada para extraer las imagenes
 
+                lblTitulo.setText("Obtenieno una imagen aleatoria por cada raza");
 
-                //Lista que se va a volcar en el RecyclerVIew.
-                List<RazaImagen> listadoValores = new ArrayList<>();
-
-
-                for (Raza raza : listado) {
-                        RazaImagen razaImagen = new RazaImagen();
-                        razaImagen.setRaza(raza.getRaza());
-                        razaImagen.setUrl("https://images.dog.ceo/breeds/hound-afghan/n02088094_10715.jpg"); //TODO Imagen estandar hasta que consiga terminar la consulta múltiple.
-                        listadoValores.add(razaImagen);
-
-                }
-
-                //Todo esto tiene que ir tras la segunda consulta. Una vez se tenga una Lista con las imagenes buenas.
-                //Puesta en marcha del RecyclerView.
-                listadoDinamico.setHasFixedSize(true);
-                listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-                adaptador = new AdaptadorRazas(listadoValores, getApplicationContext());
-                listadoDinamico.setAdapter(adaptador);
-
+                descargarImagenRaza(listado); //Llamada a la función para iniciar la consulta de las imágenes.
 
             } catch (Exception e) {
-                Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show(); //TODO teniendo el log, poner algo mas nivel de usuario
+                Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show();
                 System.out.println(e);
                 Log.e("APIAsyncTask", "Exception", e);
 
@@ -171,8 +160,9 @@ public class MainActivity extends AppCompatActivity {
         public List<Raza> convertirJsonRazas(JSONObject jsonObject) throws JSONException {
             List<Raza> lista = new ArrayList<>();
 
-            //Obtención de los valores del campo "mensaje"
+            //Obtención de los valores del campo "message"
             JSONObject jsonObjectConvertido = jsonObject.getJSONObject("message");
+
             //El mensaje es un String que contiene grupos de clave-valor. La mayoria de los valores están en blanco porque son aclaraciones de la raza.
             //Con un iterador, se recorren lo que son los campos "Clave", que en este caso son las razas, el valor que nos interesa. Se almacena en una Lista de Raza.
             Iterator iterador = jsonObjectConvertido.keys();
@@ -188,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
             return lista;
         }
 
+        //Función para la creación y alamcenamiento de la lsita de las razas.
         public void crearBaseDatosYGuardado(List<Raza> lista) {
             //Creación de la base de datos haciendo uso de la clase BaseDatosRazasHelper
             BaseDatosRazasHelper bdhl = new BaseDatosRazasHelper(getApplicationContext(), "BaseDatosRazas", null, 1);
@@ -207,16 +198,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //TODO En construcción. Lo silencio ya que no está terminado. Aún así tocaría refactorizar.
 
-    //Metodos para la obtención de las imagenes:
+    //Metodos relativos a las consultas al WebAPi para la obtención de las imagenes:
 
     public void descargarImagenRaza(List<Raza> listaRazasSinFoto) {
 
         try {
-            //Lo primero es obtener todas las url necesarias.
+            //Lo primero es obtener todas las urls necesarias.
             List<String> urlObtenidas = obtenerURLporRaza(listaRazasSinFoto);
-           // String url = "https://dog.ceo/api/breed/" + nombreRaza + "/images/random";
+
+            //Se traspasan los valores de la List<String> a String[] porque es lo que necesita el método execute.
             String[] url = new String[urlObtenidas.size()];
             for(int i = 0; i<url.length; i++){
                 url[i] = urlObtenidas.get(i);
@@ -279,7 +270,8 @@ public class MainActivity extends AppCompatActivity {
                    JSONObject jsonObject = new JSONObject(respuestaBruta);
                    String enlace = jsonObject.get("message").toString(); //Se extrae el valor del campo mensaje (La url que se puede poner directamente en el navegador)
 
-                  //Como el método doInBackGround(...) devuelve un String, no se puede crear una lista. Se concatena la respuesta con comas para posteriormente cortar por las comas y poder tener un listado.
+                  //Como el método doInBackGround(...) devuelve un String, no se puede crear una lista.
+                   // Se concatena la respuesta con comas para posteriormente cortar por las comas y poder tener un listado.
                    if(i< urls.length - 1) {
                        respuestaObtenida = respuestaObtenida + enlace + ",";
                    }else{
@@ -289,8 +281,6 @@ public class MainActivity extends AppCompatActivity {
            }catch(Exception e){
                Log.e("JSONObjectEx","Exception",e);
            }
-
-            //return urlRazaObtenida(respuestaObtenida);
             return respuestaObtenida;
         }
 
@@ -298,9 +288,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String informacionObtenida) {
             Toast.makeText(getBaseContext(), "Información obtenida con éxito.", Toast.LENGTH_LONG).show();
             try {
-
-
-                List<RazaImagen> listadoRecycler = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
+                List<RazaImagen> listadoRecycler = new ArrayList<>();
 
                 String[] urlFinales = informacionObtenida.split(",");
 
@@ -311,45 +299,25 @@ public class MainActivity extends AppCompatActivity {
 
                     listadoRecycler.add(perro);
                 }
+                lblTitulo.setText("Listado de todas las razas de perro:");
+                lblTitulo.setTextSize(25);
+                barraCarga.setVisibility(View.INVISIBLE);
 
+                //Carga del RecyclerView
+                listadoDinamico.setVisibility(View.VISIBLE);
                 listadoDinamico.setHasFixedSize(true);
                 listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-                adaptador = new AdaptadorRazas(listadoRecycler, getApplicationContext());
+                RecyclerView.Adapter adaptador = new AdaptadorRazas(listadoRecycler, getApplicationContext());
                 listadoDinamico.setAdapter(adaptador);
-
 
             } catch (Exception e) {
                 Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show(); //TODO teniendo el log, poner algo mas nivel de usuario
                 Log.e("APIAsyncTask", "Exception", e);
-
             }
         }
-
-        public List<Raza> convertirJsonUrl(JSONObject jsonObject) throws JSONException {
-            List<Raza> lista = new ArrayList<>();
-
-            //Obtención de los valores del campo "mensaje"
-            JSONObject jsonObjectConvertido = jsonObject.getJSONObject("message");
-            //El mensaje es un String que contiene grupos de clave-valor. La mayoria de los valores están en blanco porque son aclaraciones de la raza.
-            //Con un iterador, se recorren lo que son los campos "Clave", que en este caso son las razas, el valor que nos interesa. Se almacena en una Lista de Raza.
-            Iterator iterador = jsonObjectConvertido.keys();
-
-            while (iterador.hasNext()) {
-                String razaObtenida = iterador.next().toString();
-
-                Raza raza = new Raza();
-                raza.setRaza(razaObtenida);
-
-                lista.add(raza);
-            }
-            return lista;
-        }
-
-
-
 
     }
-
+    //función para generar la lista de urls necesarias para la consulta. Cada url es especifica para cada raza.
     public List<String> obtenerURLporRaza(List<Raza> listadoExtracción){
         List<String> listadoUrl = new ArrayList<>();
 
@@ -359,6 +327,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return listadoUrl;
     }
-
 }
 

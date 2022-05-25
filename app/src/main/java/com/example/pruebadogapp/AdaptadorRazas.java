@@ -28,7 +28,6 @@ public class AdaptadorRazas extends RecyclerView.Adapter<AdaptadorRazas.ViewHold
         this.contexto = contexto;
     }
 
-
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
@@ -55,12 +54,13 @@ public class AdaptadorRazas extends RecyclerView.Adapter<AdaptadorRazas.ViewHold
             public void onClick(View v){
                 Intent i = new Intent(contexto, DetalleRaza.class);
                 i.putExtra("razaSeleccionada", raza);
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); //Para solventar el error "AndroidRuntimeException: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?"
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                /*Para solventar el error "AndroidRuntimeException: Calling startActivity() from outside
+                of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?"*/
 
                 contexto.startActivity(i);
             }
         });
-
     }
 
     @Override

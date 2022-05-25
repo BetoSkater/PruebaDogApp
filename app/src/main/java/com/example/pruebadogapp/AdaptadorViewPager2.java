@@ -34,6 +34,7 @@ public class AdaptadorViewPager2 extends RecyclerView.Adapter<AdaptadorViewPager
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        //Asignación de la imagen en el ImageView mediante la libreria GLide.
         Glide.with(contexto).load(imagenesAleatorias.get(position)).into(holder.imgExpuesta);
     }
 
