@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     SQLiteDatabase baseDatos = null;
     RecyclerView listadoDinamico;
     private RecyclerView.Adapter adaptador;
-
+    List<String> razasFinales = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
         descargarRazaPerros();
 
     }
-
     //Métodos para la consulta de todas las razas en el WebApi.
     //Función para la obtención de todos los datos relativos a las razas disponibles.:
     public void descargarRazaPerros() {
@@ -115,6 +114,11 @@ public class MainActivity extends AppCompatActivity {
                 //Paso de JSONObject a lista ArrayList
                 List<Raza> listado = convertirJsonRazas(jsonObject);
 
+                //25/05: Se añaden las razas a un List<String>, hubiese sido más cómodo haber realizado toda esta parte así desde el principio.
+                for(Raza razaBucle : listado){
+                    razasFinales.add(razaBucle.getRaza().toString());
+                }
+
                 /* Ahora se almacena la lista de razas en local, se hace aqui ya que es donde se tiene la información de forma segura. Se usa SQLite.
                    Primero se crea la clase BaseDatosRazasHelper, la cual contiene la creación de la base de datos y lasactualizaciones.
                 */
@@ -125,17 +129,16 @@ public class MainActivity extends AppCompatActivity {
                 //TODO Falta por terminar la consulta múltiple. De momento se ha realizado el RecyclerView con una imagen genérica.
 
                 /*
-                //PAra descargar una imagen aleatoria por raza, se tiene que hacer uso de un bucle
-                for(int i = 0; i<listado.size(); i++){
-                    descargarImagenRaza(listado.get(i).getRaza().toString());
-                }
+                //TODO hacer llamada al metodo de la multiconsulta
+
 
                 //TODO Falta encontrar la imagen aleatoria de la raza para crear un lista de objetos que contengan ambos valores.
                 //Para esto en principio haría falta realizar una consulta.
 
-                //descargarImagenesRaza(List<Raza> listadoRazasBusqueda); //TODO
 
-                */
+                 */
+                descargarImagenRaza(listado); //TODO llamada para extraer las imagenes
+
 
                 //Lista que se va a volcar en el RecyclerVIew.
                 List<RazaImagen> listadoValores = new ArrayList<>();
@@ -185,7 +188,6 @@ public class MainActivity extends AppCompatActivity {
             return lista;
         }
 
-
         public void crearBaseDatosYGuardado(List<Raza> lista) {
             //Creación de la base de datos haciendo uso de la clase BaseDatosRazasHelper
             BaseDatosRazasHelper bdhl = new BaseDatosRazasHelper(getApplicationContext(), "BaseDatosRazas", null, 1);
@@ -206,13 +208,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //TODO En construcción. Lo silencio ya que no está terminado. Aún así tocaría refactorizar.
-    /*
+
     //Metodos para la obtención de las imagenes:
 
-    public void descargarImagenRaza(String nombreRaza) {
+    public void descargarImagenRaza(List<Raza> listaRazasSinFoto) {
+
         try {
-            String url = "https://dog.ceo/api/breed/" + nombreRaza + "/images/random";
-            new APIAsyncTaskImages().execute(url);
+            //Lo primero es obtener todas las url necesarias.
+            List<String> urlObtenidas = obtenerURLporRaza(listaRazasSinFoto);
+           // String url = "https://dog.ceo/api/breed/" + nombreRaza + "/images/random";
+            String[] url = new String[urlObtenidas.size()];
+            for(int i = 0; i<url.length; i++){
+                url[i] = urlObtenidas.get(i);
+            }
+
+            new APIAsyncTaskImages().execute(url); //TODO ojo con el Runnable
 
         } catch (Exception e) {
            Log.e("APIAsyncTask:RndImg", "Exception", e);
@@ -261,7 +271,27 @@ public class MainActivity extends AppCompatActivity {
     private class APIAsyncTaskImages extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
-            return urlRazaObtenida(urls[0]);
+           //return urlRazaObtenida(urls[0]);
+            String respuestaObtenida = "";
+           try{
+               for(int i = 0; i<urls.length; i++){
+                   String respuestaBruta = urlRazaObtenida(urls[i]); //String tipo JSONobject, Keys -> "message" y "status"
+                   JSONObject jsonObject = new JSONObject(respuestaBruta);
+                   String enlace = jsonObject.get("message").toString(); //Se extrae el valor del campo mensaje (La url que se puede poner directamente en el navegador)
+
+                  //Como el método doInBackGround(...) devuelve un String, no se puede crear una lista. Se concatena la respuesta con comas para posteriormente cortar por las comas y poder tener un listado.
+                   if(i< urls.length - 1) {
+                       respuestaObtenida = respuestaObtenida + enlace + ",";
+                   }else{
+                       respuestaObtenida = respuestaObtenida + enlace;
+                   }
+               }
+           }catch(Exception e){
+               Log.e("JSONObjectEx","Exception",e);
+           }
+
+            //return urlRazaObtenida(respuestaObtenida);
+            return respuestaObtenida;
         }
 
         @Override
@@ -269,11 +299,22 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getBaseContext(), "Información obtenida con éxito.", Toast.LENGTH_LONG).show();
             try {
 
-                List<RazaImagen> listadoValores = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
+
+                List<RazaImagen> listadoRecycler = new ArrayList<>(); //Está vacio, aún no se han añadido valores. Tengo pensado llenarlo con un for.
+
+                String[] urlFinales = informacionObtenida.split(",");
+
+                for(int i = 0; i < razasFinales.size(); i++){
+                    RazaImagen perro = new RazaImagen();
+                    perro.setRaza(razasFinales.get(i).toString());
+                    perro.setUrl(urlFinales[i]);
+
+                    listadoRecycler.add(perro);
+                }
 
                 listadoDinamico.setHasFixedSize(true);
                 listadoDinamico.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-                adaptador = new AdaptadorRazas(listadoValores, getParent().getApplicationContext());
+                adaptador = new AdaptadorRazas(listadoRecycler, getApplicationContext());
                 listadoDinamico.setAdapter(adaptador);
 
 
@@ -308,6 +349,16 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    */
+
+    public List<String> obtenerURLporRaza(List<Raza> listadoExtracción){
+        List<String> listadoUrl = new ArrayList<>();
+
+        for(Raza raza : listadoExtracción){
+            String urlRaza = "https://dog.ceo/api/breed/" + raza.getRaza().toString() + "/images/random";
+            listadoUrl.add(urlRaza);
+        }
+        return listadoUrl;
+    }
+
 }
 
