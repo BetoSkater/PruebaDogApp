@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... urls) {
             lblTitulo.setText("Obteniendo el listado de todas las razas de perro");
-            lblTitulo.setTextSize(15); //TODO
+            lblTitulo.setTextSize(15);
             return contenidoObtenido(urls[0]);
         }
 
@@ -213,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
                 url[i] = urlObtenidas.get(i);
             }
 
-            new APIAsyncTaskImages().execute(url); //TODO ojo con el Runnable
+            new APIAsyncTaskImages().execute(url);
 
         } catch (Exception e) {
            Log.e("APIAsyncTask:RndImg", "Exception", e);
@@ -235,14 +235,14 @@ public class MainActivity extends AppCompatActivity {
                 resultado = convertirUrlAString(stream);
             }
         } catch (Exception e) {
-            //TODO controlar excepción
+            Log.e("APIError","Exception", e);
         } finally {
             try {
                 if (stream != null) {
                     stream.close();
                 }
             } catch (Exception e) {
-                //TODO controlar excepción
+                Log.e("APIError","Exception", e);
             }
         }
         return resultado;
@@ -311,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
                 listadoDinamico.setAdapter(adaptador);
 
             } catch (Exception e) {
-                Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show(); //TODO teniendo el log, poner algo mas nivel de usuario
+                Toast.makeText(getApplicationContext(), "Error en el jsonArray: " + e, Toast.LENGTH_LONG).show();
                 Log.e("APIAsyncTask", "Exception", e);
             }
         }
